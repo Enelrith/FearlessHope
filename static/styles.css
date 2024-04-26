@@ -1,0 +1,113 @@
+#player_Token
+{
+  position: absolute;
+  cursor: pointer;
+  z-index: 10;
+  background-color: transparent;
+  width: 4.5em;
+  height: 4.5em;
+  border: 2px solid rgb(0, 110, 255);
+  background-color: transparent;
+  border-radius: 50%;
+  background: url("/static/dretch.png") no-repeat center;
+  background-size:70%;
+}
+
+[type ="dretch"]
+{
+  position: absolute;
+  cursor: pointer;
+  z-index: 10;
+  background-color: transparent;
+  width: 4.5em;
+  height: 4.5em;
+  border: 2px solid rgb(255, 0, 0);
+  background-color: transparent;
+  border-radius: 50%;
+  background: url("/static/dretch.png") no-repeat center;
+  background-size:contain;
+}
+
+[type = "tiger"]
+{
+  position: absolute;
+  cursor: pointer;
+  z-index: 10;
+  background-color: transparent;
+  width: 4.5em;
+  height: 4.5em;
+  border: 2px solid rgb(223, 219, 24);
+  background-color: transparent;
+  border-radius: 50%;
+  background: url("/static/tiger.webp") no-repeat center;
+  background-size:cover;
+}
+
+#gridcontainer {
+  height: 100em;
+  width: 100em;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-rows: repeat(20, 1fr);
+  grid-template-columns: repeat(20, 1fr);
+  border: 1px solid black;
+  background-image: url('./Arena.webp');
+  background-size:cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.cell {
+  cursor: pointer;
+  border: 1px solid lightgray;
+  background-color: rgba(211, 211, 211, 0);
+}
+
+.player-list
+{
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.player-list-items
+{
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #ddd;
+  font-family: Arial, sans-serif;
+  cursor: pointer;
+}
+
+li:hover {
+  background-color: #e0e0e0;
+}
+
+.container {
+  position: relative;
+}
+
+/* .background-image {
+  position: absolute;
+  z-index: -1;
+  height:1000px;
+  width:1000px;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+  margin-left: auto;
+  margin-right: auto;
+} */
+
+#scene1
+{
+  background-image: url("./Arena.webp");
+}
+#scene2
+{
+  background-image: url("./Arena2.webp")
+}

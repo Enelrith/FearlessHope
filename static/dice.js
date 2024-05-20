@@ -1,11 +1,11 @@
 "use strict";
 /****************** CHARACTER ATTRIBUTES ******************/
 class Stats {
-    constructor(strength = 0, dexterity = 0, intelligence = 0, health = 0, maxHealth = health, type = "default") {
+    constructor(strength = 0, intelligence = 0, constitution = 0, health = 0, maxHealth = health, type = "default") {
         this.strength = strength;
-        this.dexterity = dexterity;
         this.intelligence = intelligence;
-        this.health = health;
+        this.constitution = constitution;
+        this.health = health + 5 * constitution;
         this.maxHealth = health;
         this.type = type;
     }
@@ -17,7 +17,7 @@ class DretchStats extends Stats {
 }
 class TigerStats extends Stats {
     constructor() {
-        super(3, 0, 0, 20, 20, "tiger");
+        super(3, 0, 1, 20, 20, "tiger");
     }
 }
 /****************** TURNS ******************/
@@ -36,6 +36,8 @@ function manageTurn() {
 /****************** GRID & TOKENS ******************/
 let infoContent = document.getElementById("infocontent");
 function createGrid() {
+    const gridContainer = document.getElementById("gridcontainer") || new HTMLElement();
+    gridContainer.classList.remove("hide");
     const grid = document.querySelector(".grid");
     for (let i = 1; i < 21; i++) {
         const y_coords = 21 - i;
@@ -53,19 +55,20 @@ function createGrid() {
         }
     }
     player_Token.tokenPosition(10, 17);
-    dretch_Token.enemyPosition(10, 4);
+    game.currentEnemy.enemyPosition(10, 4);
 }
 class playerTokens {
     constructor() {
-        this.strength = 3;
-        this.dexterity = 1;
-        this.initelligence = 1;
-        this.health = 50;
-        this.maxHealth = 50;
+        this.strength = 0;
+        this.intelligence = 0;
+        this.constitution = 0;
+        this.health = 20;
+        this.maxHealth = 20;
         this.isTurn = true;
         this.old_x = 0;
         this.old_y = 0;
     }
+    setPlayerStats() { }
     tokenPosition(y_coords, x_coords) {
         const token_Image = document.createElement("img");
         token_Image.setAttribute("id", "player_Token");
@@ -101,8 +104,8 @@ class playerTokens {
             playerToken.remove();
         }
     }
-    playerAttack() {
-        let attackRoll;
+    playerAttack(type) {
+        let attackRoll = 0;
         let inRange = false;
         let inRangeValues = [
             { x: this.old_x - 1, y: this.old_y },
@@ -114,6 +117,7 @@ class playerTokens {
             { x: this.old_x - 1, y: this.old_y + 1 },
             { x: this.old_x + 1, y: this.old_y + 1 },
         ];
+        let attackType = ["sword", "fireball"];
         for (let i = 0; i < inRangeValues.length; i++) {
             const cell = document.querySelector(`[data-x="${inRangeValues[i].x}"][data-y="${inRangeValues[i].y}"]`);
             if (cell && cell.firstChild) {
@@ -121,75 +125,87 @@ class playerTokens {
                 break;
             }
         }
-        if (inRange) {
+        if (type == attackType[0]) {
             attackRoll = Math.floor(Math.random() * 20 + 1) + this.strength;
-            if (attackRoll > 10) {
-                let damageRoll;
-                damageRoll = Math.floor(Math.random() * 10 + 1);
-                damageRoll += this.strength;
-                if (infoContent instanceof HTMLElement) {
-                    infoContent.innerHTML += "You deal " + damageRoll + " damage!<br>";
-                }
-                let enemyHealth = (game.currentEnemy.stats.health -= damageRoll);
-                if (enemyHealth <= 0) {
-                    if (infoContent instanceof HTMLElement) {
-                        infoContent.innerHTML +=
-                            "You killed the " + game.currentEnemy.enemy_Type + "!<br>";
-                    }
-                    game.currentEnemy.removeEnemyToken();
-                    game.currentEnemy.isDead = true;
-                    switch (game.currentEnemy.stats.type) {
-                        case "dretch":
-                            game.createFight(2);
-                            break;
-                        case "tiger":
-                            game.createFight(3);
-                            break;
-                    }
-                }
-                return damageRoll;
-            }
-            else {
-                if (infoContent instanceof HTMLElement) {
-                    infoContent.innerHTML += "You miss!<br>";
-                }
-            }
-            return 0;
         }
-        else {
+        else if (type == attackType[1]) {
+            attackRoll = Math.floor(Math.random() * 20 + 1) + this.intelligence;
+        }
+        if (type == attackType[0] && !inRange) {
             if (infoContent instanceof HTMLElement) {
                 infoContent.innerHTML += "No target in range!<br>";
             }
         }
+        else if ((attackRoll <= 10 && type == attackType[0] && inRange) ||
+            (attackRoll <= 10 && type == attackType[1])) {
+            if (infoContent instanceof HTMLElement) {
+                infoContent.innerHTML += "You miss!<br>";
+            }
+        }
+        else if ((attackRoll > 10 && type == attackType[0] && inRange) ||
+            (attackRoll > 10 && type == attackType[1])) {
+            let damageRoll;
+            damageRoll = Math.floor(Math.random() * 10 + 1);
+            if (type == attackType[0])
+                damageRoll += this.strength;
+            if (type == attackType[1])
+                damageRoll += this.intelligence;
+            else if (type == attackType[1] && inRange)
+                damageRoll += this.intelligence - 5;
+            if (infoContent instanceof HTMLElement) {
+                infoContent.innerHTML += "You deal " + damageRoll + " damage!<br>";
+            }
+            let enemyHealth = (game.currentEnemy.stats.health -= damageRoll);
+            if (enemyHealth <= 0) {
+                if (infoContent instanceof HTMLElement) {
+                    infoContent.innerHTML +=
+                        "You killed the " + game.currentEnemy.enemy_Type + "!<br>";
+                }
+                game.currentEnemy.removeEnemyToken();
+                game.currentEnemy.isDead = true;
+                switch (game.currentEnemy.stats.type) {
+                    case "dretch":
+                        game.createFight(2);
+                        break;
+                    case "tiger":
+                        game.createFight(3);
+                        break;
+                }
+            }
+            return damageRoll;
+        }
         return 0;
     }
     playerActions() {
-        const attackBtn = document.createElement("button");
-        attackBtn.innerHTML = "Attack";
-        attackBtn.setAttribute("id", "attackBtn");
-        document.body.appendChild(attackBtn);
+        const slashBtn = document.createElement("button");
+        slashBtn.innerHTML = "Slash";
+        slashBtn.setAttribute("id", "slashBtn");
+        document.body.appendChild(slashBtn);
+        const fireballBtn = document.createElement("button");
+        fireballBtn.innerHTML = "Fireball";
+        fireballBtn.setAttribute("id", "fireballBtn");
+        document.body.appendChild(fireballBtn);
+        fireballBtn === null || fireballBtn === void 0 ? void 0 : fireballBtn.addEventListener("click", () => {
+            this.playerAttack("fireball");
+            game.currentEnemy.enemyBehavior();
+        });
         const endTurnBtn = document.createElement("button");
         endTurnBtn.innerHTML = "End Turn";
         endTurnBtn.setAttribute("id", "endTurnBtn");
         document.body.appendChild(endTurnBtn);
-        attackBtn === null || attackBtn === void 0 ? void 0 : attackBtn.addEventListener("click", () => {
-            this.playerAttack();
+        slashBtn === null || slashBtn === void 0 ? void 0 : slashBtn.addEventListener("click", () => {
+            this.playerAttack("sword");
+            game.currentEnemy.enemyBehavior();
         });
         endTurnBtn === null || endTurnBtn === void 0 ? void 0 : endTurnBtn.addEventListener("click", () => {
-            if (this.isTurn) {
-                manageTurn();
-            }
-            else {
-                if (infoContent instanceof HTMLElement) {
-                    infoContent.innerHTML += "It's not your turn!<br>";
-                }
-            }
+            manageTurn();
             if (!this.isTurn && !game.currentEnemy.isDead) {
-                dretch_Token.enemyBehavior();
+                game.currentEnemy.enemyBehavior();
             }
         });
         const healthBar = document.getElementById("healthBar");
-        healthBar === null || healthBar === void 0 ? void 0 : healthBar.appendChild(attackBtn);
+        healthBar === null || healthBar === void 0 ? void 0 : healthBar.appendChild(slashBtn);
+        healthBar === null || healthBar === void 0 ? void 0 : healthBar.appendChild(fireballBtn);
         healthBar === null || healthBar === void 0 ? void 0 : healthBar.appendChild(endTurnBtn);
     }
 }
@@ -293,7 +309,9 @@ class enemyTokens {
                     player_healthBar.style.width = healthPercentage + "%";
                     player_healthText.innerHTML =
                         player_Token.health +
-                            " / 50 (" +
+                            " / " +
+                            player_Token.maxHealth +
+                            "(" +
                             healthPercentage.toFixed(0) +
                             "%)";
                     if (player_Token.health <= 0) {
@@ -320,12 +338,6 @@ class enemyTokens {
         manageTurn();
     }
 }
-let player_Token;
-player_Token = new playerTokens();
-let dretch_Token;
-dretch_Token = new enemyTokens("dretch");
-let tiger_Token;
-tiger_Token = new enemyTokens("tiger");
 /****************** SCENES ******************/
 function setScene(scene_Selection) {
     const scenes = document.getElementsByClassName("background-image");
@@ -360,9 +372,124 @@ function restartBtn() {
     }
     game.createFight(1);
 }
+function handleStoryText(scene) {
+    switch (scene) {
+        case 1:
+            let storyText = document.getElementById("infocontent") || new HTMLElement();
+            storyText.innerHTML += "You arrive in a forest...<br>";
+            break;
+        case 2:
+            let storyText2 = document.getElementById("infocontent") || new HTMLElement();
+            storyText2.innerHTML += "You encounter a tiger...<br>";
+            break;
+    }
+}
+let player_Token;
+player_Token = new playerTokens();
+let dretch_Token;
+dretch_Token = new enemyTokens("dretch");
 class Game {
     constructor() {
         this.currentEnemy = dretch_Token;
+        this.currentScene = document.getElementById("gridcontainer") || new HTMLElement();
+    }
+    gameIntro() {
+        let introContainer = document.createElement("div");
+        introContainer.setAttribute("id", "introContainer");
+        let introHeader = document.createElement("h1");
+        introHeader.innerHTML = "Welcome to the Fearless Hope!";
+        introHeader.setAttribute("id", "introHeader");
+        let introText = document.createElement("p");
+        introText.setAttribute("id", "introText");
+        introText.innerHTML =
+            "You are a wanderer that has stumbled in a forest. As you were walking you suddenly heard a screech that sent shivers down your spine. You look around and see a Dretch, a small demon, charging at you. You must defend yourself!<br> But before you can do that let's take a look at the type of adventurer you are...<br>";
+        introContainer.appendChild(introHeader);
+        introContainer.appendChild(introText);
+        let introBtn = document.createElement("button");
+        introBtn.setAttribute("id", "introBtn");
+        introBtn.innerHTML = "Let's Go!";
+        introBtn.addEventListener("click", () => {
+            introContainer.remove();
+            this.setStats();
+        });
+        introContainer.appendChild(introBtn);
+        document.body.appendChild(introContainer);
+    }
+    setStats() {
+        let statsContainer = document.createElement("div");
+        statsContainer.setAttribute("id", "statsContainer");
+        let statsHeader = document.createElement("h1");
+        statsHeader.innerHTML = "What type of adventurer are you?";
+        statsHeader.setAttribute("id", "statsHeader");
+        let statsText = document.createElement("div");
+        let strengthInput = document.createElement("input");
+        strengthInput.type = "number";
+        strengthInput.value = player_Token.strength.toString();
+        strengthInput.onkeydown = function (e) {
+            return false;
+        };
+        strengthInput.min = "0";
+        let intelligenceInput = document.createElement("input");
+        intelligenceInput.type = "number";
+        intelligenceInput.value = player_Token.intelligence.toString();
+        strengthInput.onkeydown = function (e) {
+            return false;
+        };
+        intelligenceInput.min = "0";
+        let constitutionInput = document.createElement("input");
+        constitutionInput.type = "number";
+        constitutionInput.value = player_Token.constitution.toString();
+        strengthInput.onkeydown = function (e) {
+            return false;
+        };
+        constitutionInput.min = "0";
+        let strWrapper = document.createElement("div");
+        strWrapper.classList.add("statWrapper");
+        strWrapper.appendChild(document.createTextNode("Strength: "));
+        strWrapper.style.color = "black";
+        strWrapper.appendChild(strengthInput);
+        let strDesc = document.createElement("p");
+        strDesc.innerHTML = "Increases sword damage";
+        strDesc.style.color = "black";
+        strWrapper.appendChild(strDesc);
+        statsText.appendChild(strWrapper);
+        let intWrapper = document.createElement("div");
+        intWrapper.classList.add("statWrapper");
+        intWrapper.appendChild(document.createTextNode("Intelligence: "));
+        intWrapper.style.color = "black";
+        intWrapper.appendChild(intelligenceInput);
+        let intDesc = document.createElement("p");
+        intDesc.innerHTML += "Increases fireball damage";
+        intDesc.style.color = "black";
+        intWrapper.appendChild(intDesc);
+        statsText.appendChild(intWrapper);
+        let conWrapper = document.createElement("div");
+        conWrapper.classList.add("statWrapper");
+        conWrapper.appendChild(document.createTextNode("Constitution: "));
+        conWrapper.style.color = "black";
+        conWrapper.appendChild(constitutionInput);
+        let conDesc = document.createElement("p");
+        conDesc.innerHTML += "Increases health";
+        conDesc.style.color = "black";
+        conWrapper.appendChild(conDesc);
+        statsText.appendChild(conWrapper);
+        statsContainer.appendChild(statsHeader);
+        statsContainer.appendChild(statsText);
+        document.body.appendChild(statsContainer);
+        let statsBtn = document.createElement("button");
+        statsBtn.innerHTML = "Start Game";
+        statsBtn.setAttribute("id", "statsBtn");
+        statsBtn.addEventListener("click", () => {
+            player_Token.strength = parseInt(strengthInput.value);
+            player_Token.intelligence = parseInt(intelligenceInput.value);
+            player_Token.constitution = parseInt(constitutionInput.value);
+            player_Token.health = 20 + 5 * player_Token.constitution;
+            player_Token.maxHealth = player_Token.health;
+            statsContainer.remove();
+            console.log(player_Token.health);
+            game.createFight(1);
+        });
+        statsContainer.appendChild(statsBtn);
     }
     createFight(counter) {
         player_Token.health = player_Token.maxHealth;
@@ -373,7 +500,12 @@ class Game {
             let healthPercentage = (player_Token.health / player_Token.maxHealth) * 100;
             player_healthBar.style.width = healthPercentage + "%";
             player_healthText.innerHTML =
-                player_Token.health + " / 50 (" + healthPercentage.toFixed(0) + "%)";
+                player_Token.health +
+                    " / " +
+                    player_Token.maxHealth +
+                    "( " +
+                    healthPercentage.toFixed(0) +
+                    "%)";
         }
         switch (counter) {
             case 1:
@@ -388,10 +520,15 @@ class Game {
         }
     }
     firstFight() {
-        alert("You come across a demon!");
         if (!restarted) {
             createGrid();
+            let showInfo = document.getElementById("infoWrapper");
+            showInfo === null || showInfo === void 0 ? void 0 : showInfo.classList.remove("hide");
+            this.currentEnemy = dretch_Token;
+            this.currentScene.classList.add("scene1");
             player_Token.playerActions();
+            let scene = 1;
+            handleStoryText(scene);
         }
         if (restarted) {
             this.currentEnemy.removeEnemyToken();
@@ -401,8 +538,13 @@ class Game {
         }
     }
     secondFight() {
+        player_Token.health = player_Token.maxHealth;
+        let tiger_Token;
+        tiger_Token = new enemyTokens("tiger");
         this.currentEnemy = tiger_Token;
-        alert("You come across a tiger!");
+        this.currentScene.classList.remove("scene1");
+        this.currentScene.classList.add("scene2");
+        handleStoryText(2);
         this.currentEnemy.removeEnemyToken();
         this.currentEnemy.enemyPosition(10, 4);
         player_Token.tokenMove(10, 17);
@@ -414,11 +556,4 @@ class Game {
 /****************** GAME START ******************/
 let game;
 game = new Game();
-game.createFight(1);
-/****************** EVENT LISTENERS ******************/
-const gridBtn = document.getElementById("gridBtn");
-gridBtn === null || gridBtn === void 0 ? void 0 : gridBtn.addEventListener("click", createGrid);
-const sceneBtn1 = document.getElementById("setScene1");
-sceneBtn1 === null || sceneBtn1 === void 0 ? void 0 : sceneBtn1.addEventListener("click", () => setScene("scene1"));
-const sceneBtn2 = document.getElementById("setScene2");
-sceneBtn2 === null || sceneBtn2 === void 0 ? void 0 : sceneBtn2.addEventListener("click", () => setScene("scene2"));
+game.gameIntro();

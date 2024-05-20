@@ -7,23 +7,23 @@
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="static/styles.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     </head>
     <body>
     <div class="navbar">
         <h3>Fearless Hope</h3>
     </div>
-    <div class="container">
-        <img id = "scene1" class="background-image">
-        <img id = "scene2" class="background-image">
-        <div id="gridcontainer" class="grid"></div>
-      </div>      
+    <div id="gridcontainer" class="grid hide"></div>
+    <div id="infoWrapper" class="hide">
+        <div id="healthBarContainer">
+            <div id="healthBar"><div id="healthText">50/50 (100%)</div></div>
+        </div>
+        <div id="infoContainer">
+            <div id="info"><span id="infocontent"></span></div>
+        </div>
     </div>
-    <div id="healthBarContainer">
-        <div id="healthBar"><div id="healthText">50/50 (100%)</div></div>
-    </div>
-    <div id="infoContainer">
-        <div id="info"><span id="infocontent"></span></div>
-    </div>
-    </body>
     <script src="static/dice.js"></script>
+    </body>
 </html>

@@ -30,9 +30,21 @@ class DretchStats extends Stats {
   }
 }
 
-class TigerStats extends Stats {
+class OgreStats extends Stats {
   constructor() {
-    super(3, 0, 1, 20, 20, "tiger");
+    super(3, 0, 1, 20, 20, "ogre");
+  }
+}
+
+class QuasitStats extends Stats {
+  constructor() {
+    super(2, 0, 0, 15, 15, "quasit");
+  }
+}
+
+class NecromancerStats extends Stats {
+  constructor() {
+    super(2, 3, 1, 20, 20, "necromancer");
   }
 }
 
@@ -72,8 +84,8 @@ function createGrid() {
       });
     }
   }
-  player_Token.tokenPosition(10, 17);
-  game.currentEnemy.enemyPosition(10, 4);
+  player_Token.tokenPosition(13, 19);
+  game.currentEnemy.enemyPosition(7, 13);
 }
 
 class playerTokens {
@@ -182,18 +194,25 @@ class playerTokens {
       }
       let enemyHealth = (game.currentEnemy.stats.health -= damageRoll);
       if (enemyHealth <= 0) {
+        game.currentEnemy.isDead = true;
         if (infoContent instanceof HTMLElement) {
           infoContent.innerHTML +=
             "You killed the " + game.currentEnemy.enemy_Type + "!<br>";
+          game.currentEnemy.removeEnemyToken();
         }
-        game.currentEnemy.removeEnemyToken();
-        game.currentEnemy.isDead = true;
+        console.log(game.currentEnemy.stats.type);
         switch (game.currentEnemy.stats.type) {
           case "dretch":
             game.createFight(2);
             break;
-          case "tiger":
+          case "ogre":
             game.createFight(3);
+            break;
+          case "quasit":
+            game.createFight(4);
+            break;
+          case "necromancer":
+            game.gameEpilogue();
             break;
         }
       }
@@ -213,7 +232,9 @@ class playerTokens {
     document.body.appendChild(fireballBtn);
     fireballBtn?.addEventListener("click", () => {
       this.playerAttack("fireball");
-      game.currentEnemy.enemyBehavior();
+      if (!game.currentEnemy.isDead) {
+        game.currentEnemy.enemyBehavior();
+      }
     });
     const endTurnBtn = document.createElement("button");
     endTurnBtn.innerHTML = "End Turn";
@@ -222,7 +243,9 @@ class playerTokens {
 
     slashBtn?.addEventListener("click", () => {
       this.playerAttack("sword");
-      game.currentEnemy.enemyBehavior();
+      if (!game.currentEnemy.isDead) {
+        game.currentEnemy.enemyBehavior();
+      }
     });
     endTurnBtn?.addEventListener("click", () => {
       manageTurn();
@@ -245,9 +268,17 @@ class enemyTokens {
         this.stats = new DretchStats();
         this.enemy_Type = "dretch";
         break;
-      case "tiger":
-        this.stats = new TigerStats();
-        this.enemy_Type = "tiger";
+      case "ogre":
+        this.stats = new OgreStats();
+        this.enemy_Type = "ogre";
+        break;
+      case "quasit":
+        this.stats = new QuasitStats();
+        this.enemy_Type = "quasit";
+        break;
+      case "necromancer":
+        this.stats = new NecromancerStats();
+        this.enemy_Type = "necromancer";
         break;
       default:
         throw new Error("Unknown enemy type: " + enemyType);
@@ -372,9 +403,11 @@ class enemyTokens {
   }
 
   public enemyBehavior() {
-    this.enemyMove();
-    this.enemyAttack();
-    manageTurn();
+    if (!game.currentEnemy.isDead) {
+      this.enemyMove();
+      this.enemyAttack();
+      manageTurn();
+    }
   }
 }
 
@@ -420,13 +453,30 @@ function handleStoryText(scene: number) {
     case 1:
       let storyText =
         document.getElementById("infocontent") || new HTMLElement();
-      storyText.innerHTML += "You arrive in a forest...<br>";
+      storyText.innerHTML +=
+        "Suddenly a lesser demon starts attacking you out of nowhere!<br> What is it doing here? Demon aren't native to this realm..<br>";
       break;
     case 2:
       let storyText2 =
         document.getElementById("infocontent") || new HTMLElement();
-      storyText2.innerHTML += "You encounter a tiger...<br>";
+      storyText2.innerHTML +=
+        "You stumble across an abandoned cabin that is being guarded by an ogre<br> What could it be hiding?<br> You get a really bad feeling about that cabin..<br>";
       break;
+    case 3:
+      let storyText3 =
+        document.getElementById("infocontent") || new HTMLElement();
+      storyText3.innerHTML +=
+        "You enter the abandoned cabin...<br> As you enter you feel a putrid smell coming from the basement...<br> Seemingly out of nowhere a demon lunges at you!<br>";
+    case 4:
+      let storyText4 =
+        document.getElementById("infocontent") || new HTMLElement();
+      storyText4.innerHTML +=
+        "After defeating the demon you go down the basement.. <br> You encounter a necromancer that is summoning demons...<br> You must stop him!<br>";
+    case 5:
+      let storyText5 =
+        document.getElementById("infocontent") || new HTMLElement();
+      storyText5.innerHTML +=
+        "You defeated the necromancer and the demons!<br> The forest is safe!<br> For now...<br>";
   }
 }
 let player_Token: playerTokens;
@@ -435,8 +485,72 @@ player_Token = new playerTokens();
 let dretch_Token: enemyTokens;
 dretch_Token = new enemyTokens("dretch");
 
+let ogre_Token: enemyTokens;
+ogre_Token = new enemyTokens("ogre");
+
+let quasit_Token: enemyTokens;
+quasit_Token = new enemyTokens("quasit");
+
+let necromancer_Token: enemyTokens;
+necromancer_Token = new enemyTokens("necromancer");
+
 class Game {
   constructor() {}
+
+  public gameTutorial() {
+    let tutorialContainer = document.createElement("div");
+    tutorialContainer.setAttribute("id", "tutorialContainer");
+    document.body.appendChild(tutorialContainer);
+    let tutorialHeader = document.createElement("h1");
+    tutorialHeader.innerHTML = "Fearless Hope Tutorial";
+    let tutorialWrapper = document.createElement("div");
+    tutorialWrapper.setAttribute("id", "tutorialWrapper");
+    tutorialContainer.appendChild(tutorialWrapper);
+    tutorialHeader.setAttribute("id", "tutorialHeader");
+    tutorialWrapper.appendChild(tutorialHeader);
+    let tutorialText = document.createElement("p");
+    tutorialText.setAttribute("id", "tutorialText");
+    tutorialText.innerHTML =
+      "Welcome to Fearless Hope! This is a turn-based game where you will face different enemies.";
+    tutorialHeader.appendChild(tutorialText);
+    let gridContainer = document.getElementById("gridcontainer");
+    gridContainer?.appendChild(tutorialContainer);
+    let tutorialBtn = document.createElement("button");
+    tutorialBtn.innerHTML = "Next";
+    tutorialBtn.setAttribute("id", "tutorialBtn");
+    let counter = 0;
+    tutorialBtn.addEventListener("click", () => {
+      switch (counter) {
+        case 0:
+          tutorialText.innerHTML =
+            "You can move your character by clicking on the cells.";
+          counter++;
+          break;
+        case 1:
+          tutorialText.innerHTML =
+            "You can attack by using the Slash and Fireball buttons. Fireball deals less damage if used in melee so it is better used as an opening attack. Attacking ends your turn. Using slash while not in melee range will result in a miss.";
+          counter++;
+          break;
+        case 2:
+          tutorialText.innerHTML =
+            "You can end your turn without attacking by clicking the End Turn button. The enemy will then take its turn.";
+          counter++;
+          break;
+        case 3:
+          tutorialText.innerHTML =
+            "Your health is displayed below the attack and end turn buttons. If it reaches 0, you lose. You can restart the game by clicking the Restart button. Restarting will place you back at the start of the fight you lost.";
+          tutorialBtn.innerHTML = "Start Game";
+          tutorialBtn.style.left = "18em";
+          counter++;
+          break;
+        case 4:
+          tutorialContainer.remove();
+          player_Token.playerActions();
+          break;
+      }
+    });
+    tutorialWrapper.appendChild(tutorialBtn);
+  }
 
   public gameIntro() {
     let introContainer = document.createElement("div");
@@ -462,11 +576,16 @@ class Game {
   }
 
   public setStats() {
+    let statpoints: number = 5;
     let statsContainer = document.createElement("div");
     statsContainer.setAttribute("id", "statsContainer");
     let statsHeader = document.createElement("h1");
     statsHeader.innerHTML = "What type of adventurer are you?";
     statsHeader.setAttribute("id", "statsHeader");
+    let skillPoints = document.createElement("p");
+    skillPoints.setAttribute("id", "skillPoints");
+    skillPoints.innerHTML = "Skill Points: " + statpoints;
+    statsHeader.appendChild(skillPoints);
     let statsText = document.createElement("div");
     let strengthInput = document.createElement("input");
     strengthInput.type = "number";
@@ -478,7 +597,7 @@ class Game {
     let intelligenceInput = document.createElement("input");
     intelligenceInput.type = "number";
     intelligenceInput.value = player_Token.intelligence.toString();
-    strengthInput.onkeydown = function (e) {
+    intelligenceInput.onkeydown = function (e) {
       return false;
     };
     intelligenceInput.min = "0";
@@ -486,7 +605,7 @@ class Game {
     let constitutionInput = document.createElement("input");
     constitutionInput.type = "number";
     constitutionInput.value = player_Token.constitution.toString();
-    strengthInput.onkeydown = function (e) {
+    constitutionInput.onkeydown = function (e) {
       return false;
     };
     constitutionInput.min = "0";
@@ -528,6 +647,67 @@ class Game {
     statsContainer.appendChild(statsText);
     document.body.appendChild(statsContainer);
 
+    let skillPointsDisplay = document.getElementById("skillPoints");
+    strengthInput.addEventListener("change", () => {
+      let previousStrValue: number = player_Token.strength;
+      player_Token.strength = parseInt(strengthInput.value);
+      if (player_Token.strength > previousStrValue) {
+        if (statpoints > 0) {
+          statpoints--;
+          strengthInput.value = player_Token.strength.toString();
+        } else {
+          player_Token.strength = previousStrValue;
+          strengthInput.value = previousStrValue.toString();
+        }
+      } else {
+        statpoints++;
+        strengthInput.value = player_Token.strength.toString();
+      }
+      console.log(statpoints);
+      if (skillPointsDisplay)
+        skillPointsDisplay.innerHTML = "Skill Points: " + statpoints;
+    });
+
+    intelligenceInput.addEventListener("change", () => {
+      let previousIntValue: number = player_Token.intelligence;
+      player_Token.intelligence = parseInt(intelligenceInput.value);
+      if (player_Token.intelligence > previousIntValue) {
+        if (statpoints > 0) {
+          statpoints--;
+          intelligenceInput.value = player_Token.intelligence.toString();
+        } else {
+          player_Token.intelligence = previousIntValue;
+          intelligenceInput.value = previousIntValue.toString();
+        }
+      } else {
+        statpoints++;
+        intelligenceInput.value = player_Token.intelligence.toString();
+      }
+      console.log(statpoints);
+      if (skillPointsDisplay)
+        skillPointsDisplay.innerHTML = "Skill Points: " + statpoints;
+    });
+
+    constitutionInput.addEventListener("change", () => {
+      let previousConValue: number = player_Token.constitution;
+      player_Token.constitution = parseInt(constitutionInput.value);
+      if (player_Token.constitution > previousConValue) {
+        if (statpoints > 0) {
+          statpoints--;
+          constitutionInput.value = player_Token.constitution.toString();
+        } else {
+          player_Token.constitution = previousConValue;
+          constitutionInput.value = previousConValue.toString();
+        }
+      } else {
+        statpoints++;
+        constitutionInput.value = player_Token.constitution.toString();
+      }
+      console.log(statpoints);
+      if (skillPointsDisplay)
+        skillPointsDisplay.innerHTML = "Skill Points: " + statpoints;
+    });
+
     let statsBtn = document.createElement("button");
     statsBtn.innerHTML = "Start Game";
     statsBtn.setAttribute("id", "statsBtn");
@@ -547,6 +727,7 @@ class Game {
   public currentEnemy: enemyTokens = dretch_Token;
   public currentScene: HTMLElement =
     document.getElementById("gridcontainer") || new HTMLElement();
+
   public createFight(counter: number) {
     player_Token.health = player_Token.maxHealth;
 
@@ -576,42 +757,93 @@ class Game {
         this.secondFight();
         break;
       case 3:
-        this.thirdFight;
+        this.thirdFight();
+        break;
+      case 4:
+        this.fourthFight();
+        break;
+      case 5:
+        this.gameEpilogue();
         break;
     }
   }
   public firstFight() {
     if (!restarted) {
       createGrid();
+      game.gameTutorial();
       let showInfo = document.getElementById("infoWrapper");
       showInfo?.classList.remove("hide");
       this.currentEnemy = dretch_Token;
       this.currentScene.classList.add("scene1");
-      player_Token.playerActions();
       let scene: number = 1;
       handleStoryText(scene);
     }
     if (restarted) {
       this.currentEnemy.removeEnemyToken();
-      this.currentEnemy.enemyPosition(10, 4);
-      player_Token.tokenMove(10, 17);
+      this.currentEnemy.enemyPosition(7, 13);
+      player_Token.tokenMove(13, 19);
       restarted = false;
     }
   }
   public secondFight() {
-    player_Token.health = player_Token.maxHealth;
-    let tiger_Token: enemyTokens;
-    tiger_Token = new enemyTokens("tiger");
-    this.currentEnemy = tiger_Token;
-    this.currentScene.classList.remove("scene1");
-    this.currentScene.classList.add("scene2");
-    handleStoryText(2);
-    this.currentEnemy.removeEnemyToken();
-    this.currentEnemy.enemyPosition(10, 4);
-    player_Token.tokenMove(10, 17);
+    if (!restarted) {
+      this.currentScene.classList.remove("scene1");
+      this.currentScene.classList.add("scene2");
+      player_Token.health = player_Token.maxHealth;
+      this.currentEnemy.removeEnemyToken();
+      handleStoryText(2);
+      this.currentEnemy = ogre_Token;
+      this.currentEnemy.enemyPosition(17, 10);
+      player_Token.tokenMove(10, 7);
+    }
+    if (restarted) {
+      this.currentEnemy.removeEnemyToken();
+      this.currentEnemy.enemyPosition(17, 10);
+      player_Token.tokenMove(10, 7);
+      restarted = false;
+    }
   }
   public thirdFight() {
-    player_Token.health = player_Token.maxHealth;
+    if (!restarted) {
+      this.currentScene.classList.remove("scene2");
+      this.currentScene.classList.add("scene3");
+      player_Token.health = player_Token.maxHealth;
+      this.currentEnemy.removeEnemyToken();
+      handleStoryText(3);
+      this.currentEnemy = quasit_Token;
+      this.currentEnemy.enemyPosition(10, 4);
+      player_Token.tokenMove(2, 5);
+    }
+    if (restarted) {
+      this.currentEnemy.removeEnemyToken();
+      this.currentEnemy.enemyPosition(10, 4);
+      player_Token.tokenMove(2, 5);
+      restarted = false;
+    }
+  }
+  public fourthFight() {
+    if (!restarted) {
+      this.currentScene.classList.remove("scene3");
+      this.currentScene.classList.add("scene4");
+      player_Token.health = player_Token.maxHealth;
+      this.currentEnemy.removeEnemyToken();
+      handleStoryText(4);
+      this.currentEnemy = necromancer_Token;
+      this.currentEnemy.enemyPosition(14, 13);
+      player_Token.tokenMove(4, 18);
+    }
+    if (restarted) {
+      this.currentEnemy.removeEnemyToken();
+      this.currentEnemy.enemyPosition(14, 13);
+      player_Token.tokenMove(4, 18);
+      restarted = false;
+    }
+  }
+  public gameEpilogue() {
+    player_Token.removePlayerToken();
+    this.currentScene.classList.remove("scene4");
+    this.currentScene.classList.add("scene5");
+    handleStoryText(5);
   }
 }
 
